@@ -55,7 +55,7 @@ def configure_logger(conf, logger):
 def supervise(conf, control_files, logger):
     try:
         # Normalize path
-        watchdir = conf['CONFIG']['watchdir'].strip('\\/') + '/'
+        watchdir = conf['CONFIG']['watchdir'].rstrip('\\/') + '/'
     except KeyError as e:
         logger.critical("Couldn't find watchdir: %s" % e)
         exit(2)
@@ -85,9 +85,14 @@ def supervise(conf, control_files, logger):
                 except configparser.NoSectionError:
                     kwargs = {}
                 t1 = time.time()
-                globals()[key](conf, logger, **kwargs)
+                ret = globals()[key](conf, logger, **kwargs)
                 t2 = time.time()
                 logger.debug("Running %s task took %s." % (key, t2 - t1))
+                if ret == 0:
+                    logger.debug("Task %s was executed successfully." % key)
+                else:
+                    logger.warning("Task %s returned unexpected exit code: %s" % (key, ret))
+
                 try:
                     os.remove(ctrl_file)
                 except OSError as e:
@@ -104,9 +109,7 @@ def supervise(conf, control_files, logger):
 def jekyll_build(conf, logger, cmd=None, **kwargs):
     if cmd is None:
         cmd = "jekyll build"
-    logger.debug("Executing: %s" % cmd)
-    ret = os.system(cmd)
-    logger.debug("ret: %s" % ret)
+    return os.system(cmd)
 
 
 
