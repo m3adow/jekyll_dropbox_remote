@@ -17,8 +17,8 @@ import configparser
 import sys
 
 from subprocess import call
-
 from logging import handlers
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Control jekyll by control files")
@@ -57,10 +57,17 @@ def configure_logger(conf, logger):
 def supervise(conf, control_files, logger):
     try:
         # Normalize path
-        watchdir = conf['CONFIG']['watchdir'].rstrip('\\/') + '/'
+        watchdir = conf['CONFIG']['watch_dir'].rstrip('\\/') + '/'
     except KeyError as e:
         logger.critical("Couldn't find watchdir: %s" % e)
         exit(2)
+
+    try:
+        # We can use relative pathes after this
+        os.chdir(conf.get('CONFIG', 'jekyll_dir'))
+    except (configparser.NoOptionError, configparser.NoSectionError, FileNotFoundError) as e:
+        logger.warning("Couldn't chdir to jekyll directory: %s." % e)
+
     shoopdaloop = True
     interval = conf.getint('CONFIG', 'watch_interval', fallback=60)
     # -1 should always be less than the epoch time we'll get for mtime
@@ -110,9 +117,12 @@ def jekyll_build(logger, **kwargs):
         cmd = kwargs['cmd']
     else:
         cmd = 'jekyll build'
+
     try:
         ret = call(cmd, shell=True)
-        if ret != 0:
+        if ret == 0:
+            logger.debug("Task %s was executed successfully." % kwargs['task_name'])
+        elif ret < 0:
             logger.error("Task %s was terminated by signal %s" % (kwargs['task_name'], -ret))
         else:
             logger.error("Task %s returned" % (kwargs['task_name'], ret))
