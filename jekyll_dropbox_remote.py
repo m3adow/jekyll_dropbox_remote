@@ -20,7 +20,7 @@ from logging import handlers
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Control jekyll by control files")
-    parser.add_argument('conf_path', metavar='CONFIG_PATH', help="Path to the configuration file")
+    parser.add_argument('conf_path', metavar='config_PATH', help="Path to the configuration file")
     args = parser.parse_args()
     return args
 
@@ -32,12 +32,14 @@ def read_conf(path, logger):
     except FileNotFoundError as e:
         logger.critical("Couldn't read config file %s: %s" % (path, e))
         exit(1)
-    return conf
+    else:
+        return conf
 
 
 def configure_logger(conf, logger):
     if not conf.has_section('LOGGING'):
         logger.info('No custom logging configured.')
+        logger.setLevel(logging.WARNING)
         return
     if conf.has_option('LOGGING', 'logfile'):
         max_size = conf.getint('LOGGING', 'logfile_maxsize', fallback=10485760)
@@ -48,6 +50,7 @@ def configure_logger(conf, logger):
         logger.setLevel(logging.WARNING)
     for handler in logger.handlers:
         handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s: %(message)s"))
+
 
 def supervise(conf, control_files, logger):
     try:
@@ -75,8 +78,12 @@ def supervise(conf, control_files, logger):
                 continue
             ctrl_file = watchdir + value
             if os.path.exists(ctrl_file):
+                try:
+                    kwargs = dict(conf.items(key))
+                except configparser.NoSectionError:
+                    kwargs = {}
                 t1 = time.time()
-                globals()[key](conf, logger)
+                globals()[key](conf, logger, **kwargs)
                 t2 = time.time()
                 logger.debug("Running %s task took %s." % (key, t2 - t1))
                 try:
@@ -86,16 +93,22 @@ def supervise(conf, control_files, logger):
 
         if os.path.exists(watchdir + control_files['exit']):
             logger.info("Found exit file '%s'. Exiting." % control_files['exit'])
+            os.remove(watchdir + control_files['exit'])
             exit()
         mtime_last = mtime
         time.sleep(interval)
 
 
-def jekyll_build(conf, logger):
-    pass
+def jekyll_build(conf, logger, cmd=None, **kwargs):
+    if cmd is None:
+        cmd = "jekyll build"
+    logger.debug("Executing: %s" % cmd)
+    ret = os.system(cmd)
+    logger.debug("ret: %s" % ret)
 
 
-def deploy_to_gh_pages(conf, logger):
+
+def deploy_to_gh_pages(conf, logger, cmd=None, **kwargs):
     pass
 
 
@@ -112,6 +125,7 @@ def main():
     # default logger before config
     logger = logging.getLogger('jekyll_dropbox_remote')
     logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.INFO)
     conf = read_conf(args['conf_path'], logger)
     configure_logger(conf, logger)
     supervise(conf, control_files, logger)
