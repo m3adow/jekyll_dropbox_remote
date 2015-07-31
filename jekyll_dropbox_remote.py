@@ -16,6 +16,8 @@ import argparse
 import configparser
 import sys
 
+from subprocess import call
+
 from logging import handlers
 
 def parse_args():
@@ -82,16 +84,13 @@ def supervise(conf, control_files, logger):
             if os.path.exists(ctrl_file):
                 try:
                     kwargs = dict(conf.items(key))
+                    kwargs['task_name'] = key
                 except configparser.NoSectionError:
-                    kwargs = {}
+                    kwargs = {'task_name': key}
                 t1 = time.time()
-                ret = globals()[key](conf, logger, **kwargs)
+                globals()[key](logger, kwargs)
                 t2 = time.time()
                 logger.debug("Running %s task took %s." % (key, t2 - t1))
-                if ret == 0:
-                    logger.debug("Task %s was executed successfully." % key)
-                else:
-                    logger.warning("Task %s returned unexpected exit code: %s" % (key, ret))
 
                 try:
                     os.remove(ctrl_file)
@@ -106,14 +105,22 @@ def supervise(conf, control_files, logger):
         time.sleep(interval)
 
 
-def jekyll_build(conf, logger, cmd=None, **kwargs):
-    if cmd is None:
-        cmd = "jekyll build"
-    return os.system(cmd)
+def jekyll_build(logger, **kwargs):
+    if 'cmd' in kwargs:
+        cmd = kwargs['cmd']
+    else:
+        cmd = 'jekyll build'
+    try:
+        ret = call(cmd, shell=True)
+        if ret != 0:
+            logger.error("Task %s was terminated by signal %s" % (kwargs['task_name'], -ret))
+        else:
+            logger.error("Task %s returned" % (kwargs['task_name'], ret))
+    except OSError as e:
+        logger.warning("Execution of task %s failed:" % (kwargs['task_name'], e))
 
 
-
-def deploy_to_gh_pages(conf, logger, cmd=None, **kwargs):
+def deploy_to_gh_pages(conf, logger, **kwargs):
     pass
 
 
