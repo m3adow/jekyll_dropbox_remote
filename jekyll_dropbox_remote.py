@@ -20,7 +20,7 @@ from logging import handlers
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Control jekyll by control files")
-    parser.add_argument('conf_path', metavar='config_PATH', help="Path to the configuration file")
+    parser.add_argument('conf_path', metavar='config_path', help="Path to the configuration file")
     args = parser.parse_args()
     return args
 
@@ -69,9 +69,11 @@ def supervise(conf, control_files, logger):
             mtime = os.path.getmtime(watchdir)
         except os.error as e:
             logger.error("Couldn't get mtime of watchdir %s (%s). Skipping." % (watchdir, e))
+            mtime = -1
         if (mtime - mtime_last) == 0:
             time.sleep(interval)
             continue
+
         for key, value in control_files.items():
             # We'll process exit files after the loop
             if key == 'exit':
