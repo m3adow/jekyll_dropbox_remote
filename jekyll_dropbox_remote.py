@@ -120,19 +120,28 @@ def jekyll_build(logger, **kwargs):
 
     try:
         ret = call(cmd, shell=True)
-        if ret == 0:
-            logger.debug("Task %s was executed successfully." % kwargs['task_name'])
-        elif ret < 0:
-            logger.error("Task %s was terminated by signal %s" % (kwargs['task_name'], -ret))
-        else:
-            logger.error("Task %s returned" % (kwargs['task_name'], ret))
     except OSError as e:
-        logger.warning("Execution of task %s failed:" % (kwargs['task_name'], e))
+        logger.error("Execution of task %s failed:" % (kwargs['task_name'], e))
+    check_ret(ret, kwargs['task_name'], logger)
 
 
-def deploy_to_gh_pages(conf, logger, **kwargs):
-    pass
+def deploy_to_gh_pages(logger, **kwargs):
+    try:
+        ret = call(
+            "git add -A && sed -i -e '1i Auto commit by jekyll_remote.' -e 's/^#//' .git/COMMITEDITMSG", shell=True
+        )
+        ret += call("git commit", shell=True)
+    except OSError as e:
+        logger.error("Task %s failed: %s" % (kwargs['task_name'], e))
+    check_ret(ret, kwargs['task_name'], logger)
 
+def check_ret(retcode, task_name, logger):
+    if retcode == 0:
+        logger.debug("Task %s was executed successfully." % task_name)
+    elif retcode < 0:
+        logger.error("Task %s was terminated by signal %s" % (task_name, -retcode))
+    else:
+        logger.error("Task %s returned" % (task_name, retcode))
 
 def main():
     control_files = {
