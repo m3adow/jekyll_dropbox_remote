@@ -106,14 +106,11 @@ def supervise(conf, control_files, logger):
         time.sleep(interval)
 
 
-def jekyll_build(conf, logger, **kwargs):
+def jekyll_build(logger, **kwargs):
     if 'cmd' in kwargs:
         cmd = kwargs['cmd']
     else:
         cmd = 'jekyll build'
-
-    test = call("cd %s" % conf['CONFIG']['jekyll_dir'], shell=True)
-    test2 = call("pwd", shell=True)
 
     try:
         ret = call(cmd, shell=True)
@@ -122,8 +119,10 @@ def jekyll_build(conf, logger, **kwargs):
     check_ret(ret, kwargs['task_name'], logger)
 
 
-def deploy_to_gh_pages(logger, **kwargs):
+def deploy_to_gh_pages(conf, logger, **kwargs):
     try:
+        test = call("cd %s" % conf['CONFIG']['jekyll_dir'], shell=True)
+        test2 = call("pwd", shell=True)
         ret = call(
             "git add -A && sed -i -e '1i Auto commit by jekyll_remote.' -e 's/^#//' .git/COMMITEDITMSG", shell=True
         )
