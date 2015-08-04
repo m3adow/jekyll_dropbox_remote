@@ -131,17 +131,36 @@ def deploy_to_gh_pages(logger, **kwargs):
             kwargs, kwargs['task_name'])
             )
         return
-
+    commit_msg = ["Auto commit done by jekyll_file_remote"]
+    editmsg_path = kwargs['jekyll_base_dir'] + '/.git/COMMIT_EDITMSG'
+    # First try to 'git add -A'
     try:
         ret = call("cd %s && git add -A" % kwargs['jekyll_base_dir'], shell=True)
-        with open(kwargs['jekyll_base_dir'] + '/.git/COMMIT_EDITMSG') as f:
-            commitmsg = ["Auto commit done by jekyll_file_remote."] + [line.strip('#\n ') for line in f][6:]
+    except OSError as e:
+        logger.error("Error while 'git add'ing, aborting (%s)." % e)
+        return
+
+    # Then see, if the COMMIT_EDITMSG was changed due to our 'git add'
+    # If so, add the modified, added and deleted files to the commit_msg
+    try:
+        editmsg_mtime = os.path.getmtime(editmsg_path)
+        # Has the COMMIT_EDITMSG file been touched recently? Then we use some parts of it.
+        if time.time() - editmsg_mtime < 30:
+            with open(kwargs['jekyll_base_dir'] + '/.git/COMMIT_EDITMSG') as f:
+                modified_files = [line.strip('#\n ') for line in f][6:]
+            commit_msg += modified_files
+    except FileNotFoundError as e:
+        logger.debug("Encountered problem reading COMMIT_EDITMSG. Skipping it (%s)." % e)
+
+    # Finally commit && push
+    try:
         ret += call("cd %s && git commit -m '%s' && git push" % (
-		kwargs['jekyll_base_dir'], "\n".join(commitmsg)),
-		shell=True)
+            kwargs['jekyll_base_dir'], "\n".join(commit_msg)),
+            shell=True)
     except (OSError, FileNotFoundError) as e:
         logger.error("Task %s failed: %s" % (kwargs['task_name'], e))
     check_ret(ret, kwargs['task_name'], logger)
+
 
 def check_ret(retcode, task_name, logger):
     if retcode == 0:
@@ -149,7 +168,7 @@ def check_ret(retcode, task_name, logger):
     elif retcode < 0:
         logger.error("Task %s was terminated by signal %s" % (task_name, -retcode))
     else:
-        logger.error("Task %s returned" % (task_name, retcode))
+        logger.error("Task %s returned %s." % (task_name, retcode))
 
 def main():
     control_files = {
