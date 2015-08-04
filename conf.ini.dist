@@ -1,0 +1,14 @@
+[DEFAULT]
+;jekyll_base_dir=/tmp
+
+[LOGGING]
+;loglevel=WARNING
+;logfile=/dev/null
+;logfile_maxsize=10485760
+
+[CONFIG]
+;watch_interval=30
+;watch_dir=/tmp/watch
+
+[jekyll_build]
+;cmd=bundle exec "jekyll build --no-watch"
