@@ -62,12 +62,6 @@ def supervise(conf, control_files, logger):
         logger.critical("Couldn't find watchdir: %s" % e)
         exit(2)
 
-    try:
-        # We can use relative pathes after this
-        os.chdir(conf.get('CONFIG', 'jekyll_dir'))
-    except (configparser.NoOptionError, configparser.NoSectionError, FileNotFoundError) as e:
-        logger.warning("Couldn't chdir to jekyll directory: %s." % e)
-
     shoopdaloop = True
     interval = conf.getint('CONFIG', 'watch_interval', fallback=60)
     # -1 should always be less than the epoch time we'll get for mtime
@@ -95,7 +89,7 @@ def supervise(conf, control_files, logger):
                 except configparser.NoSectionError:
                     kwargs = {'task_name': key}
                 t1 = time.time()
-                globals()[key](logger, **kwargs)
+                globals()[key](conf, logger, **kwargs)
                 t2 = time.time()
                 logger.debug("Running %s task took %s." % (key, t2 - t1))
 
@@ -112,11 +106,14 @@ def supervise(conf, control_files, logger):
         time.sleep(interval)
 
 
-def jekyll_build(logger, **kwargs):
+def jekyll_build(conf, logger, **kwargs):
     if 'cmd' in kwargs:
         cmd = kwargs['cmd']
     else:
         cmd = 'jekyll build'
+
+    test = call("cd %s" % conf['CONFIG']['jekyll_dir'], shell=True)
+    test2 = call("pwd", shell=True)
 
     try:
         ret = call(cmd, shell=True)
