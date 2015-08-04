@@ -90,7 +90,7 @@ def supervise(conf, control_files, logger):
                     kwargs = {'task_name': key}
 
                 t1 = time.time()
-                globals()[key](conf, logger, **kwargs)
+                globals()[key](logger, **kwargs)
                 t2 = time.time()
                 logger.debug("Running %s task took %s." % (key, t2 - t1))
 
