@@ -126,7 +126,9 @@ def jekyll_build(logger, **kwargs):
 
 def deploy_to_gh_pages(logger, **kwargs):
     if 'jekyll_base_dir' not in kwargs:
-        logger.error("Couldn't find jekyll_base_dir in config. Skipping taks %s" % kwargs['task_name'])
+        logger.error("Couldn't find jekyll_base_dir in config (%s). Skipping taks %s" % (
+            kwargs, kwargs['task_name'])
+            )
         return
 
     try:
