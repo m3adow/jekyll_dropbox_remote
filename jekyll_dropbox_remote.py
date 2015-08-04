@@ -87,7 +87,8 @@ def supervise(conf, control_files, logger):
                     kwargs = dict(conf.items(key))
                     kwargs['task_name'] = key
                 except configparser.NoSectionError:
-                    kwargs = {'task_name': key}
+                    kwargs = dict(conf.items('DEFAULT'))
+                    kwargs['task_name'] = key
 
                 t1 = time.time()
                 globals()[key](logger, **kwargs)
