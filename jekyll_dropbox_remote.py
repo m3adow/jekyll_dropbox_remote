@@ -134,7 +134,7 @@ def deploy_to_gh_pages(logger, **kwargs):
 
     try:
         ret = call("cd %s && git add -A" % kwargs['jekyll_base_dir'], shell=True)
-        with open(kwargs['jekyll_base_dir'] + 'git/COMMIT_EDITMSG') as f:
+        with open(kwargs['jekyll_base_dir'] + '/.git/COMMIT_EDITMSG') as f:
             commitmsg = [line.strip('#\n ') for line in f][6:]
         ret += call("cd %s && git commit -m '%s' && git push" % "\n".join(commitmsg), shell=True)
     except (OSError, FileNotFoundError) as e:
