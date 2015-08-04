@@ -88,6 +88,7 @@ def supervise(conf, control_files, logger):
                     kwargs['task_name'] = key
                 except configparser.NoSectionError:
                     kwargs = {'task_name': key}
+
                 t1 = time.time()
                 globals()[key](conf, logger, **kwargs)
                 t2 = time.time()
@@ -110,7 +111,11 @@ def jekyll_build(logger, **kwargs):
     if 'cmd' in kwargs:
         cmd = kwargs['cmd']
     else:
-        cmd = 'jekyll build'
+        try:
+            cmd = 'cd %s && jekyll build' % kwargs['jekyll_base_dir']
+        except KeyError as e:
+            logger.error("Encountered problem in taks %s. Skipping." % kwargs['task_name'])
+            return
 
     try:
         ret = call(cmd, shell=True)
@@ -119,14 +124,18 @@ def jekyll_build(logger, **kwargs):
     check_ret(ret, kwargs['task_name'], logger)
 
 
-def deploy_to_gh_pages(conf, logger, **kwargs):
+def deploy_to_gh_pages(logger, **kwargs):
+    if 'jekyll_base_dir' not in kwargs:
+        logger("Couldn't find jekyll_base_dir in config. Skipping taks %s" % kwargs['task_name'])
+        return
+
     try:
-        test = call("cd %s" % conf['CONFIG']['jekyll_dir'], shell=True)
-        test2 = call("pwd", shell=True)
         ret = call(
-            "git add -A && sed -i -e '1i Auto commit by jekyll_remote.' -e 's/^#//' .git/COMMITEDITMSG", shell=True
+            "cd %s && git add -A && sed -i -e '1i Auto commit by jekyll_remote.' -e 's/^#//' .git/COMMITEDITMSG" %
+            kwargs['jekyll_base_dir'],
+            shell=True
         )
-        ret += call("git commit", shell=True)
+        ret += call("cd %s && git commit" % kwargs['jekyll_base_dir'], shell=True)
     except OSError as e:
         logger.error("Task %s failed: %s" % (kwargs['task_name'], e))
     check_ret(ret, kwargs['task_name'], logger)
