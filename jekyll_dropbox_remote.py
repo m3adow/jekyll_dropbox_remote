@@ -135,8 +135,10 @@ def deploy_to_gh_pages(logger, **kwargs):
     try:
         ret = call("cd %s && git add -A" % kwargs['jekyll_base_dir'], shell=True)
         with open(kwargs['jekyll_base_dir'] + '/.git/COMMIT_EDITMSG') as f:
-            commitmsg = [line.strip('#\n ') for line in f][6:]
-        ret += call("cd %s && git commit -m '%s' && git push" % "\n".join(commitmsg), shell=True)
+            commitmsg = ["Auto commit done by jekyll_file_remote."] + [line.strip('#\n ') for line in f][6:]
+        ret += call("cd %s && git commit -m '%s' && git push" % (
+		kwargs['jekyll_base_dir'], "\n".join(commitmsg)),
+		shell=True)
     except (OSError, FileNotFoundError) as e:
         logger.error("Task %s failed: %s" % (kwargs['task_name'], e))
     check_ret(ret, kwargs['task_name'], logger)
