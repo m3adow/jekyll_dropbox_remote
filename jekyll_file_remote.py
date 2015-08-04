@@ -110,7 +110,7 @@ def supervise(conf, control_files, logger):
 
 def jekyll_build(logger, **kwargs):
     if 'cmd' in kwargs:
-        cmd = kwargs['cmd']
+        cmd = 'cd %s && ' % kwargs['jekyll_base_dir'] + kwargs['cmd']
     else:
         try:
             cmd = 'cd %s && jekyll build' % kwargs['jekyll_base_dir']
