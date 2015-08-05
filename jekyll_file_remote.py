@@ -172,13 +172,15 @@ def check_ret(retcode, task_name, logger):
 
 def main():
     control_files = {
-        "jekyll_build": ".BUILD",
-        "deploy_to_gh_pages": ".DEPLOY",
+        "jekyll_build": "d.BUILD",
+        "deploy_to_gh_pages": "d.DEPLOY",
         "exit": ".EXIT"
     }
+    '''
     # Prepend a 'd' as filename for Windows because Windows doesn't like .filenames
     if sys.platform == 'win32':
         control_files = {key: 'd' + value for (key, value) in control_files.items()}
+    '''
     args = vars(parse_args())
     # default logger before config
     logger = logging.getLogger('jekyll_dropbox_remote')
