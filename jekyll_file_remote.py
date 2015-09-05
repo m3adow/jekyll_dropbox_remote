@@ -113,7 +113,7 @@ def jekyll_build(logger, **kwargs):
         cmd = 'cd %s && ' % kwargs['jekyll_base_dir'] + kwargs['cmd']
     else:
         try:
-            cmd = 'cd %s && jekyll build' % kwargs['jekyll_base_dir']
+            cmd = 'cd %s && jekyll build --drafts' % kwargs['jekyll_base_dir']
         except KeyError as e:
             logger.error("Encountered problem in taks %s. Skipping." % kwargs['task_name'])
             return
