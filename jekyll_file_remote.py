@@ -119,6 +119,7 @@ def jekyll_build(logger, **kwargs):
             return
 
     try:
+        logger.debug("Calling '%s'" % cmd)
         ret = call(cmd, shell=True)
     except OSError as e:
         logger.error("Execution of task %s failed:" % (kwargs['task_name'], e))
